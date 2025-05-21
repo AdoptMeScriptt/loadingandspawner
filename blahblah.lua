@@ -1,14 +1,18 @@
--- Combined Loading + Pet Spawner GUI Script
+-- Combined Loader + Pet Spawner GUI
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
---== LOADING GUI ==--
+-- Destroy existing GUIs (optional cleanup)
+if playerGui:FindFirstChild("LoadingScriptGUI") then playerGui.LoadingScriptGUI:Destroy() end
+if playerGui:FindFirstChild("Spawner") then playerGui.Spawner:Destroy() end
+
+-- Loader GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "LoadingScriptGUI"
-pcall(function()
-	gui.Parent = game:GetService("CoreGui")
-end)
-if not gui.Parent then
-	gui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-end
+gui.Parent = playerGui
 
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 400, 0, 150)
@@ -55,31 +59,29 @@ runButton.Font = Enum.Font.GothamBold
 runButton.TextScaled = true
 runButton.Text = "Run Script"
 runButton.Visible = false
-Instance.new("UICorner", runButton).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", runButton).CornerRadius = UDim.new(0, 6)
 
--- Animate loading
-spawn(function()
+-- Animate loading bar
+task.spawn(function()
 	for i = 1, 100 do
 		progressBar.Size = UDim2.new(i / 100, 0, 1, 0)
 		percentageLabel.Text = i .. "%"
-		wait(0.05)
+		task.wait(0.03)
 	end
-	progressBar.Visible = false
-	percentageLabel.Visible = false
 	runButton.Visible = true
 end)
 
---== PET SPAWNER GUI CODE ==--
-local function createPetSpawnerGUI()
-	local petType = "NFR"
-	local Spawner = Instance.new("ScreenGui")
+-- On button click: remove loader, open pet spawner
+runButton.MouseButton1Click:Connect(function()
+	gui:Destroy()
+
+	-- PET SPAWNER GUI CODE BELOW
+	local Spawner = Instance.new("ScreenGui", playerGui)
 	Spawner.Name = "Spawner"
-	Spawner.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 	Spawner.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-	local Main = Instance.new("Frame")
+	local Main = Instance.new("Frame", Spawner)
 	Main.Name = "Main"
-	Main.Parent = Spawner
 	Main.AnchorPoint = Vector2.new(0.5, 0.5)
 	Main.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
 	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -88,75 +90,73 @@ local function createPetSpawnerGUI()
 
 	local T = Instance.new("TextLabel", Main)
 	T.Text = "Pet Spawner"
-	T.Font = Enum.Font.GothamBold
-	T.TextColor3 = Color3.fromRGB(255, 255, 255)
-	T.TextScaled = true
 	T.Size = UDim2.new(0, 406, 0, 46)
-	T.Position = UDim2.new(0.5, 0, 0.1, 0)
+	T.Position = UDim2.new(0.5, 0, 0.088, 0)
 	T.AnchorPoint = Vector2.new(0.5, 0.5)
 	T.BackgroundTransparency = 1
+	T.TextColor3 = Color3.new(1, 1, 1)
+	T.Font = Enum.Font.GothamBold
+	T.TextScaled = true
 
-	local function makeButton(name, text, pos, callback)
+	local petType = "NFR"
+	local function makeButton(name, pos, onClick)
 		local btn = Instance.new("TextButton", Main)
 		btn.Name = name
+		btn.Text = name
 		btn.Size = UDim2.new(0, 89, 0, 50)
 		btn.Position = pos
 		btn.AnchorPoint = Vector2.new(0.5, 0.5)
 		btn.BackgroundColor3 = Color3.fromRGB(6, 6, 6)
+		btn.TextColor3 = name == "NFR" and Color3.fromRGB(25, 255, 21) or Color3.fromRGB(255, 255, 255)
 		btn.Font = Enum.Font.GothamBold
-		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 		btn.TextScaled = true
-		btn.Text = text
 		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-		btn.MouseButton1Click:Connect(callback)
+		btn.MouseButton1Click:Connect(onClick)
 		return btn
 	end
 
-	local frBtn = makeButton("FR", "FR", UDim2.new(0.2, 0, 0.35, 0), function()
-		frBtn.TextColor3 = Color3.fromRGB(25, 255, 21)
-		nfrBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		mfrBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	local FR, NFR, MFR
+	FR = makeButton("FR", UDim2.new(0.2, 0, 0.35, 0), function()
 		petType = "FR"
+		FR.TextColor3 = Color3.fromRGB(25, 255, 21)
+		NFR.TextColor3, MFR.TextColor3 = Color3.new(1,1,1), Color3.new(1,1,1)
 	end)
-
-	local nfrBtn = makeButton("NFR", "NFR", UDim2.new(0.5, 0, 0.35, 0), function()
-		nfrBtn.TextColor3 = Color3.fromRGB(25, 255, 21)
-		frBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		mfrBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	NFR = makeButton("NFR", UDim2.new(0.5, 0, 0.35, 0), function()
 		petType = "NFR"
+		NFR.TextColor3 = Color3.fromRGB(25, 255, 21)
+		FR.TextColor3, MFR.TextColor3 = Color3.new(1,1,1), Color3.new(1,1,1)
 	end)
-
-	local mfrBtn = makeButton("MFR", "MFR", UDim2.new(0.8, 0, 0.35, 0), function()
-		mfrBtn.TextColor3 = Color3.fromRGB(25, 255, 21)
-		frBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		nfrBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	MFR = makeButton("MFR", UDim2.new(0.8, 0, 0.35, 0), function()
 		petType = "MFR"
+		MFR.TextColor3 = Color3.fromRGB(25, 255, 21)
+		FR.TextColor3, NFR.TextColor3 = Color3.new(1,1,1), Color3.new(1,1,1)
 	end)
 
 	local NameBox = Instance.new("TextBox", Main)
 	NameBox.Size = UDim2.new(0, 354, 0, 45)
 	NameBox.Position = UDim2.new(0.5, 0, 0.6, 0)
 	NameBox.AnchorPoint = Vector2.new(0.5, 0.5)
-	NameBox.PlaceholderText = "Enter Pet Name Here"
-	NameBox.Font = Enum.Font.GothamBold
-	NameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 	NameBox.BackgroundColor3 = Color3.fromRGB(6, 6, 6)
+	NameBox.PlaceholderText = "Enter Pet Name Here"
+	NameBox.Text = ""
+	NameBox.TextColor3 = Color3.new(1,1,1)
+	NameBox.Font = Enum.Font.GothamBold
 	NameBox.TextScaled = true
 	Instance.new("UICorner", NameBox).CornerRadius = UDim.new(0, 6)
 
-	local spawnBtn = Instance.new("TextButton", Main)
-	spawnBtn.Text = "Spawn"
-	spawnBtn.Size = UDim2.new(0, 176, 0, 41)
-	spawnBtn.Position = UDim2.new(0.5, 0, 0.83, 0)
-	spawnBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	spawnBtn.Font = Enum.Font.GothamBold
-	spawnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	spawnBtn.BackgroundColor3 = Color3.fromRGB(6, 6, 6)
-	spawnBtn.TextScaled = true
-	Instance.new("UICorner", spawnBtn).CornerRadius = UDim.new(0, 6)
+	local Spawn = Instance.new("TextButton", Main)
+	Spawn.Text = "Spawn"
+	Spawn.Size = UDim2.new(0, 176, 0, 41)
+	Spawn.Position = UDim2.new(0.5, 0, 0.82, 0)
+	Spawn.AnchorPoint = Vector2.new(0.5, 0.5)
+	Spawn.BackgroundColor3 = Color3.fromRGB(6, 6, 6)
+	Spawn.TextColor3 = Color3.new(1, 1, 1)
+	Spawn.Font = Enum.Font.GothamBold
+	Spawn.TextScaled = true
+	Instance.new("UICorner", Spawn).CornerRadius = UDim.new(0, 6)
 
-	spawnBtn.MouseButton1Click:Connect(function()
-		local petName = NameBox.Text
+	-- Spawner logic
+	local function duplicatePet(petName)
 		local Loads = require(game.ReplicatedStorage.Fsys).load
 		local ClientData = Loads("ClientData")
 		local InventoryDB = Loads("InventoryDB")
@@ -175,33 +175,52 @@ local function createPetSpawnerGUI()
 		local function cloneTable(original)
 			local copy = {}
 			for k, v in pairs(original) do
-				copy[k] = typeof(v) == "table" and cloneTable(v) or v
+				copy[k] = type(v) == "table" and cloneTable(v) or v
 			end
 			return copy
 		end
 
-		for category_name, category_table in pairs(InventoryDB) do
-			for id, item in pairs(category_table) do
-				if category_name == "pets" and item.name == petName then
-					local uuid = game.HttpService:GenerateGUID()
+		for cat, catTbl in pairs(InventoryDB) do
+			for id, item in pairs(catTbl) do
+				if cat == "pets" and item.name == petName then
+					local uuid = HttpService:GenerateGUID()
 					local n_item = cloneTable(item)
 					n_item["unique"] = "uuid_" .. uuid
 					n_item["category"] = "pets"
 					n_item["properties"] = generate_prop()
 					n_item["newness_order"] = math.random(1, 999999)
-					if not Inventory[category_name] then
-						Inventory[category_name] = {}
-					end
-					Inventory[category_name][uuid] = n_item
+					Inventory[cat] = Inventory[cat] or {}
+					Inventory[cat][uuid] = n_item
 					return
 				end
 			end
 		end
-	end)
-end
+	end
 
--- Hook to Run Script button
-runButton.MouseButton1Click:Connect(function()
-	gui:Destroy()
-	createPetSpawnerGUI()
+	Spawn.MouseButton1Click:Connect(function()
+		duplicatePet(NameBox.Text)
+	end)
+
+	-- Make GUI draggable
+	local UIS = game:GetService("UserInputService")
+	local dragToggle, dragStart, startPos
+	Main.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragToggle = true
+			dragStart = input.Position
+			startPos = Main.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragToggle = false
+				end
+			end)
+		end
+	end)
+	UIS.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement and dragToggle then
+			local delta = input.Position - dragStart
+			local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+			TweenService:Create(Main, TweenInfo.new(0.25), {Position = newPos}):Play()
+		end
+	end)
 end)
