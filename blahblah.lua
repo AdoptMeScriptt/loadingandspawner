@@ -59,7 +59,7 @@ runButton.BackgroundColor3 = Color3.fromRGB(0, 255, 170)
 runButton.TextColor3 = Color3.fromRGB(0, 0, 0)
 runButton.Font = Enum.Font.GothamBold
 runButton.TextScaled = true
-runButton.Text = "RUN SCRIPT"
+runButton.Text = "Run Script"
 runButton.Visible = false
 Instance.new("UICorner", runButton).CornerRadius = UDim.new(0, 6)
 
